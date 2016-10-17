@@ -1,0 +1,228 @@
+'use strict'
+
+const FadeCandy = require('./dist/FadeCandy')
+
+let BA_INTERVAL = null
+let ACL_INTERVAL = null
+let BAR_INTERVAL = null
+let INTERVAL_1 = null
+let INTERVAL_2 = null
+
+let fc = new FadeCandy()
+
+function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function getRandomColor() {
+    return [getRandomInt(0,255), getRandomInt(0,255), getRandomInt(0,255)]
+}
+
+fc.on(FadeCandy.events.READY, function () {
+
+    console.log('FadeCandy.events.READY')
+
+    // see the config schema
+    console.log(fc.Configuration.schema)
+
+    // create default color look up table
+    fc.clut.create()
+
+    // set fadecandy led to manual mode
+    fc.config.set(fc.Configuration.schema.LED_MODE, 1)
+
+    // blink that led
+    let state = false
+    setInterval(() => {
+        state = !state;
+        fc.config.set(fc.Configuration.schema.LED_STATUS, +state)
+    }, 500)
+})
+
+fc.on(FadeCandy.events.COLOR_LUT_READY, function () {
+    console.log('FaceCandy says color lut ready')
+
+    let frame = 0
+    let pixels = 8
+
+    pingPong(frame, pixels)
+})
+
+function pingPong(frame, pixels) {
+    let duration = 800
+
+    setInterval(function () {
+        killIntervals();
+
+        baseAnimation(0, pixels)
+
+        setTimeout(function () {
+            killIntervals();
+
+            baseAnimationReversed(0, pixels)
+        }, duration/2)
+    }, duration)
+
+    //baseAnimation(frame, pixels, INTERVAL_1)
+}
+
+function pairs() {
+    let noColor = [0,0,0]
+
+    let c1 = [0, 244, 25]
+    let c2 = [244, 25, 0]
+
+    let r1 = getRandomColor(0, 255)
+    let r2 = getRandomColor(0, 255)
+
+    let colorPair = r1.concat(noColor)
+
+    let colors = []
+
+    for(let x = 0; x < pixels/2; x++) {
+        colors.push(colorPair)
+    }
+
+    console.log('colors', colors);
+    colors = [].concat.apply([], colors)
+
+    fc.send(colors, function () {
+        console.log(`done updating to ${colors}`)
+    })
+}
+
+function randomColorsThenChase() {
+    let frame = 0
+    let pixels = 8
+
+    let duration = 3000
+
+    setInterval(function () {
+        if (ACL_INTERVAL) {
+            clearInterval(ACL_INTERVAL)
+        }
+
+        baseAnimationReversed(frame, pixels)
+
+        setTimeout(function () {
+            if (BAR_INTERVAL) {
+                clearInterval(BAR_INTERVAL)
+            }
+            allColorLights(frame, pixels)
+        }, duration/2)
+    }, duration)
+
+    allColorLights(frame, pixels)
+
+}
+
+function baseAnimation (frame, pixels, intervalName) {
+    let randomColor = [
+        getRandomInt(1, 255),
+        getRandomInt(1, 255),
+        getRandomInt(1, 255)
+    ]
+
+    const RED = [
+        getRandomInt(225, 255),
+        getRandomInt(1, 35),
+        getRandomInt(1, 35)
+    ]
+
+    let color = randomColor
+
+    INTERVAL_1 = setInterval(function () {
+
+        let data = new Uint8Array(pixels * 3)
+
+        for (let pixel = 0; pixel < pixels; pixel ++) {
+            if (frame % pixels == pixel) {
+                let i = 3 * pixel
+                data[i] = color[0]
+                data[i + 1] = color[1]
+                data[i + 2] = color[2]
+            }
+        }
+        fc.send(data)
+        frame++
+
+        //console.log(frame);
+        //console.log(data);
+
+    }, 1000/21)
+}
+
+function baseAnimationReversed (frame, pixels) {
+    let randomColor = [
+        getRandomInt(1, 255),
+        getRandomInt(1, 255),
+        getRandomInt(1, 255)
+    ]
+
+    const BLUE = [
+        getRandomInt(1, 35),
+        getRandomInt(1, 35),
+        getRandomInt(225, 255),
+    ]
+
+    let color = randomColor
+
+    INTERVAL_2 = setInterval(function () {
+
+        let data = new Uint8Array(pixels * 3)
+
+        for (let pixel = 0; pixel < pixels; pixel ++) {
+            if (frame % pixels == pixel) {
+                let n = Math.abs(7-pixel)
+                //let i = 3 * pixel 
+                let i = 3 * n
+                data[i] = color[0]
+                data[i + 1] = color[1]
+                data[i + 2] = color[2]
+            }
+        }
+        fc.send(data)
+        frame++
+
+        //console.log(frame);
+        //console.log(data);
+
+    }, 1000/21)
+}
+
+function allColorLights(frame, pixels) {
+    ACL_INTERVAL = setInterval(function () {
+
+        let data = new Uint8Array(pixels * 3)
+        let min = 1
+        let max = 255
+
+        for (let pixel = 0; pixel < pixels; pixel ++) {
+            let i = 3 * pixel
+            data[i] = getRandomInt(min, max)
+            data[i + 1] = getRandomInt(min, max)
+            data[i + 2] = getRandomInt(min, max)
+        }
+        fc.send(data)
+        frame++
+
+        console.log(data);
+
+    }, 1000/8)
+}
+
+function killIntervals() {
+    let intervals = [
+        BA_INTERVAL,
+        ACL_INTERVAL,
+        BAR_INTERVAL,
+        INTERVAL_1,
+        INTERVAL_2
+    ]
+
+    intervals.forEach(function (interval) {
+        clearInterval(interval)
+    })
+}

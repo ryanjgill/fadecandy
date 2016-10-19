@@ -7,13 +7,17 @@ let ACL_INTERVAL = null
 let BAR_INTERVAL = null
 let INTERVAL_1 = null
 let INTERVAL_2 = null
+let INTERVAL_3 = null
+let INTERVAL_4 = null
+let MAIN_INTERVAL = null
+let PINGPONG_INTERVAL = null
 
 let fc = new FadeCandy()
 
 function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min)) + min;
+    min = Math.ceil(min)
+    max = Math.floor(max)
+    return Math.floor(Math.random() * (max - min)) + min
 }
 
 function getRandomColor() {
@@ -36,7 +40,7 @@ fc.on(FadeCandy.events.READY, function () {
     // blink that led
     let state = false
     setInterval(() => {
-        state = !state;
+        state = !state
         fc.config.set(fc.Configuration.schema.LED_STATUS, +state)
     }, 500)
 })
@@ -46,14 +50,32 @@ fc.on(FadeCandy.events.COLOR_LUT_READY, function () {
 
     let frame = 0
     let pixels = 8
+    let duration = 3000
+    let limit = 4;
 
-    pingPong(frame, pixels)
+    //pingPong(0, pixels)
+    randomColorsThenChase()
+
 })
+
+function turnOff() {
+    let pixels = 8
+    let noColor = [0,0,0]
+    let allOff = []
+
+    for(let x=0; x<pixels; x++) {
+        allOff.push(noColor)
+    }
+
+    killIntervals();
+
+    fc.send([].concat.apply([], allOff))
+}
 
 function pingPong(frame, pixels) {
     let duration = 800
 
-    setInterval(function () {
+    PINGPONG_INTERVAL = setInterval(function () {
         killIntervals();
 
         baseAnimation(0, pixels)
@@ -64,11 +86,9 @@ function pingPong(frame, pixels) {
             baseAnimationReversed(0, pixels)
         }, duration/2)
     }, duration)
-
-    //baseAnimation(frame, pixels, INTERVAL_1)
 }
 
-function pairs() {
+function pairs(frame, pixels) {
     let noColor = [0,0,0]
 
     let c1 = [0, 244, 25]
@@ -85,7 +105,7 @@ function pairs() {
         colors.push(colorPair)
     }
 
-    console.log('colors', colors);
+    console.log('colors', colors)
     colors = [].concat.apply([], colors)
 
     fc.send(colors, function () {
@@ -97,28 +117,25 @@ function randomColorsThenChase() {
     let frame = 0
     let pixels = 8
 
-    let duration = 3000
+    let duration = 6000
 
     setInterval(function () {
-        if (ACL_INTERVAL) {
-            clearInterval(ACL_INTERVAL)
-        }
+        killIntervals()
 
-        baseAnimationReversed(frame, pixels)
+        pingPong(frame, pixels)
 
         setTimeout(function () {
-            if (BAR_INTERVAL) {
-                clearInterval(BAR_INTERVAL)
-            }
+            killIntervals()
+
             allColorLights(frame, pixels)
-        }, duration/2)
+        }, duration/4 + 100)
     }, duration)
 
     allColorLights(frame, pixels)
 
 }
 
-function baseAnimation (frame, pixels, intervalName) {
+function baseAnimation (frame, pixels) {
     let randomColor = [
         getRandomInt(1, 255),
         getRandomInt(1, 255),
@@ -164,7 +181,7 @@ function baseAnimationReversed (frame, pixels) {
     const BLUE = [
         getRandomInt(1, 35),
         getRandomInt(1, 35),
-        getRandomInt(225, 255),
+        getRandomInt(225, 255)
     ]
 
     let color = randomColor
@@ -208,9 +225,9 @@ function allColorLights(frame, pixels) {
         fc.send(data)
         frame++
 
-        console.log(data);
+        console.log(data)
 
-    }, 1000/8)
+    }, 1000/8*4)
 }
 
 function killIntervals() {
@@ -219,7 +236,10 @@ function killIntervals() {
         ACL_INTERVAL,
         BAR_INTERVAL,
         INTERVAL_1,
-        INTERVAL_2
+        INTERVAL_2,
+        INTERVAL_3,
+        INTERVAL_4,
+        PINGPONG_INTERVAL
     ]
 
     intervals.forEach(function (interval) {

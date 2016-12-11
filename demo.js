@@ -1,6 +1,7 @@
 'use strict'
 
 const FadeCandy = require('./dist/FadeCandy')
+const chalk = require('chalk')
 
 let BA_INTERVAL = null
 let ACL_INTERVAL = null
@@ -53,9 +54,10 @@ fc.on(FadeCandy.events.COLOR_LUT_READY, function () {
     let duration = 3000
     let limit = 4;
 
+    chargeUp(0, 8)
+    //allColorLights(0,8)
     //pingPong(0, pixels)
-    randomColorsThenChase()
-
+    //randomColorsThenChase()
 })
 
 function turnOff() {
@@ -78,7 +80,7 @@ function pingPong(frame, pixels) {
     PINGPONG_INTERVAL = setInterval(function () {
         killIntervals();
 
-        baseAnimation(0, pixels)
+        chargeUp(0, pixels)
 
         setTimeout(function () {
             killIntervals();
@@ -135,24 +137,30 @@ function randomColorsThenChase() {
 
 }
 
-function baseAnimation (frame, pixels) {
-    let randomColor = [
-        getRandomInt(1, 255),
-        getRandomInt(1, 255),
-        getRandomInt(1, 255)
-    ]
+function chargeUp (frame, pixels) {
+    let randomColor = () => {
+        return [
+            getRandomInt(1, 255),
+            getRandomInt(1,255),
+            getRandomInt(1, 255)
+        ]
+    }
 
-    const RED = [
-        getRandomInt(225, 255),
-        getRandomInt(1, 35),
-        getRandomInt(1, 35)
-    ]
-
-    let color = randomColor
+    let color = randomColor()
+    let data = new Uint8Array(pixels * 3)
 
     INTERVAL_1 = setInterval(function () {
+        // delay filling of bar
+        let randomInt = Math.random()
 
-        let data = new Uint8Array(pixels * 3)
+        if (randomInt < 0.92) {
+            //data = data ? data.slice(0, data.length-3) : []
+            fc.send(data)
+            console.log(chalk.red(randomInt))
+            return
+        }
+
+        console.log(chalk.green(randomInt))
 
         for (let pixel = 0; pixel < pixels; pixel ++) {
             if (frame % pixels == pixel) {
@@ -165,10 +173,28 @@ function baseAnimation (frame, pixels) {
         fc.send(data)
         frame++
 
-        //console.log(frame);
-        //console.log(data);
+        if (frame % pixels === 0) {
+            reset()
+        }
 
-    }, 1000/21)
+    }, 1000/21*3)
+}
+
+function reset () {
+    killIntervals()
+
+    setTimeout(function () {
+        fc.send(new Uint8Array(8*3));
+    }, 1000)
+
+    setTimeout(function () {
+        baseAnimationReversed(0, 8)
+    }, 2000)
+
+    setTimeout(function() {
+        killIntervals()
+        chargeUp(0, 8)
+    }, 6000)
 }
 
 function baseAnimationReversed (frame, pixels) {
@@ -176,12 +202,6 @@ function baseAnimationReversed (frame, pixels) {
         getRandomInt(1, 255),
         getRandomInt(1, 255),
         getRandomInt(1, 255)
-    ]
-
-    const BLUE = [
-        getRandomInt(1, 35),
-        getRandomInt(1, 35),
-        getRandomInt(225, 255)
     ]
 
     let color = randomColor
@@ -202,33 +222,35 @@ function baseAnimationReversed (frame, pixels) {
         }
         fc.send(data)
         frame++
-
-        //console.log(frame);
-        //console.log(data);
-
+        
     }, 1000/21)
 }
 
 function allColorLights(frame, pixels) {
     ACL_INTERVAL = setInterval(function () {
+        if (frame % 4 === 0) {
+            let data = new Uint8Array(pixels * 3)
+            let min = 1
+            let max = 255
 
-        let data = new Uint8Array(pixels * 3)
-        let min = 1
-        let max = 255
-
-        for (let pixel = 0; pixel < pixels; pixel ++) {
-            let i = 3 * pixel
-            data[i] = getRandomInt(min, max)
-            data[i + 1] = getRandomInt(min, max)
-            data[i + 2] = getRandomInt(min, max)
+            for (let pixel = 0; pixel < pixels; pixel++) {
+                let i = 3 * pixel
+                data[i] = getRandomInt(min, max)
+                data[i + 1] = getRandomInt(min, max)
+                data[i + 2] = getRandomInt(min, max)
+            }
+            fc.send(data)
+            console.log(data)
         }
-        fc.send(data)
+
         frame++
 
-        console.log(data)
+
 
     }, 1000/8*4)
 }
+
+
 
 function killIntervals() {
     let intervals = [

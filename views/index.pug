@@ -1,0 +1,22 @@
+html
+    head
+        title= appTitle
+        link(href='https://fonts.googleapis.com/icon?family=Material+Icons', rel='stylesheet')
+        link(href='https://code.getmdl.io/1.2.1/material.indigo-pink.min.css', rel='stylesheet')
+        link(href='/css/main.css', rel='stylesheet')
+    body
+        br
+        input(type='color', class='colorPicker')
+        .controls
+            button(id='chargeUp', class='mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--primary') Charge Up
+
+
+        .strip
+            - var pixelLength = 8
+            - for(var x=0; x < pixelLength; x++)
+                .pixel
+
+        script(src="/js/socket.io.min.js")
+        script(src="/js/jquery.min.js")
+        script(async, defer, src="https://code.getmdl.io/1.2.1/material.min.js")
+        script(async, defer, src="/js/index.js")

@@ -39,4 +39,4 @@ jspm_packages
 dist
 
 #webstorm workspace
-.idea/
+.idea/*

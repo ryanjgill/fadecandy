@@ -40,3 +40,4 @@ dist
 
 #webstorm workspace
 .idea/*
+.idea/workspace.xml

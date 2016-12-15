@@ -16,7 +16,7 @@ app.locals.appTitle = appTitle
 app.set('view engine', 'pug')
 app.use(express.static('public'))
 
-app.get('/', (req, res, next) => {
+app.get('/', (req, res) => {
     res.render('index')
 })
 

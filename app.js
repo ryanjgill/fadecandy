@@ -36,12 +36,13 @@ io.on('connection', socket => {
   })
 })
 
-let INTERVAL_1 = null
-let INTERVAL_2 = null
-let ASC = null
-let RESET_1 = null
-let RESET_2 = null
-let RESET_3 = null
+let INTERVAL_1
+let INTERVAL_2
+let ASC
+let ARC
+let RESET_1
+let RESET_2
+let RESET_3
 
 let fc = new FadeCandy()
 
@@ -97,7 +98,7 @@ function chargeUp(frame, pixels, _color) {
     // delay filling of bar
     let randomInt = Math.random()
 
-    if (randomInt < 0.94) {
+    if (randomInt < 0.24) {
       //data = data ? data.slice(0, data.length-3) : []
       fc.send(data)
       console.log(chalk.red(randomInt))
@@ -147,6 +148,43 @@ function allSameColor(frame, pixels, _color) {
     frame++
 
   }, 1000 / 60)
+}
+
+function allRandomColor(_frame, pixels, _color) {
+  let randomColor = () => {
+    return [
+      getRandomInt(1, 255),
+      getRandomInt(1, 255),
+      getRandomInt(1, 255)
+    ]
+  }
+
+  let color = _color ? _color : randomColor()
+  let data = []
+  let frame = _frame ? _frame : 0
+
+  for (let pixel = 0; pixel < pixels; pixel++) {
+    data.push(color[0])
+    data.push(color[1])
+    data.push(color[2])
+  }
+
+  ARC = setInterval(() => {
+    if (frame > 20) {
+      console.log('pick New Color!')
+      resetARC(0, pixels)
+      return
+    }
+
+    fc.send(data)
+    frame++
+
+  }, 1000 / 60)
+}
+
+function resetARC(frame, pixels) {
+  killIntervals()
+  allRandomColor(frame, pixels)
 }
 
 function clearStrip(pixels) {
@@ -211,6 +249,7 @@ function killIntervals() {
     INTERVAL_1,
     INTERVAL_2,
     ASC,
+    ARC,
     RESET_1,
     RESET_2,
     RESET_3

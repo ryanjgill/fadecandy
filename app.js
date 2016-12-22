@@ -7,20 +7,22 @@ const app = express()
 const server = require('http').Server(app)
 const appTitle = 'FadeCandy NeoPixels'
 const io = require('socket.io')(server)
+const cors = require('cors')
 
 let fadeCandyReady = false
 
 server.listen(3000)
 
 app.locals.appTitle = appTitle
+app.use(cors())
 app.set('view engine', 'pug')
 app.use(express.static('public'))
-
 app.get('/', (req, res) => {
   res.render('index')
 })
 
 io.on('connection', socket => {
+  console.log(socket.id)
   socket.on('newColor', data => {
     if (fadeCandyReady) {
       killIntervals()

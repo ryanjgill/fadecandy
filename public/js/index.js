@@ -1,4 +1,4 @@
-var socket = io.connect('http://localhost:3000');
+var socket = io.connect();
 
 window.__selectedColor = [];
 
@@ -6,13 +6,13 @@ socket.on('newColor', function (data) {
   console.log(data, data)
 });
 
-socket.emit('test', { name: 'testing 123' });
+socket.emit('test', {name: 'testing 123'});
 
 $(function () {
   function hexToRgb(hex) {
     // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
     var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+    hex = hex.replace(shorthandRegex, function (m, r, g, b) {
       return r + r + g + g + b + b;
     });
 
@@ -23,12 +23,11 @@ $(function () {
       : null;
   }
 
-  function emitColor (color) {
+  function emitColor(color) {
     socket.emit('newColor', {
       color: color
     })
   }
-
 
 
 // set strip to black
@@ -44,14 +43,16 @@ $(function () {
     var $target = $(e.currentTarget)
       , color = e.target.value
       , rgbColor = hexToRgb(color)
-      , colorArray = rgbColor.replace(/[^\d]/g,' ').trim().split(' ').map(function (n) { return n++;})
+      , colorArray = rgbColor.replace(/[^\d]/g, ' ').trim().split(' ').map(function (n) {
+        return n++;
+      })
       ;
 
     __selectedColor = colorArray;
 
     setAllPixels(hexToRgb(color));
     //pulseAllPixels();
-    emitColor(colorArray, { color: __selectedColor});
+    emitColor(colorArray, {color: __selectedColor});
 
   });
 
@@ -65,7 +66,7 @@ $(function () {
 
   $('#chargeUp').on('click', function () {
     $('.pixel').addClass('chargeUp').removeClass('pulse chase-right chase-left');
-    socket.emit('chargeUp', { color: __selectedColor })
+    socket.emit('chargeUp', {color: __selectedColor})
   });
 
 

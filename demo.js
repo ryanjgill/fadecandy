@@ -5,6 +5,7 @@ const chalk = require('chalk')
 
 let BA_INTERVAL = null
 let ACL_INTERVAL = null
+let ACL2_INTERVAL = null
 let BAR_INTERVAL = null
 let INTERVAL_1 = null
 let INTERVAL_2 = null
@@ -12,6 +13,7 @@ let INTERVAL_3 = null
 let INTERVAL_4 = null
 let MAIN_INTERVAL = null
 let PINGPONG_INTERVAL = null
+let PINGPONG_INTERVAL2 = null
 
 let fc = new FadeCandy()
 
@@ -54,10 +56,15 @@ fc.on(FadeCandy.events.COLOR_LUT_READY, function () {
     let duration = 3000
     let limit = 4;
 
-    chargeUp(0, 8)
-    //allColorLights(0,8)
+    reset()
+
+    chargeUp(0, pixels)
+    //allColorLights(0,pixels)
+    //fadeAllLights(0, pixels)
     //pingPong(0, pixels)
     //randomColorsThenChase()
+
+    //baseAnimationReversed(0, pixels)
 })
 
 function turnOff() {
@@ -69,21 +76,21 @@ function turnOff() {
         allOff.push(noColor)
     }
 
-    killIntervals();
+    killIntervals()
 
     fc.send([].concat.apply([], allOff))
 }
 
 function pingPong(frame, pixels) {
-    let duration = 800
+    let duration = 4000
 
     PINGPONG_INTERVAL = setInterval(function () {
-        killIntervals();
+        killIntervals()
 
         chargeUp(0, pixels)
 
         setTimeout(function () {
-            killIntervals();
+            killIntervals()
 
             baseAnimationReversed(0, pixels)
         }, duration/2)
@@ -149,19 +156,9 @@ function chargeUp (frame, pixels) {
     let color = randomColor()
     let data = new Uint8Array(pixels * 3)
 
+    console.log(`\n${color}`)
+
     INTERVAL_1 = setInterval(function () {
-        // delay filling of bar
-        let randomInt = Math.random()
-
-        if (randomInt < 0.92) {
-            //data = data ? data.slice(0, data.length-3) : []
-            fc.send(data)
-            console.log(chalk.red(randomInt))
-            return
-        }
-
-        console.log(chalk.green(randomInt))
-
         for (let pixel = 0; pixel < pixels; pixel ++) {
             if (frame % pixels == pixel) {
                 let i = 3 * pixel
@@ -175,26 +172,14 @@ function chargeUp (frame, pixels) {
 
         if (frame % pixels === 0) {
             reset()
+            chargeUp(frame, pixels)
         }
 
-    }, 1000/21*3)
+    }, 1000/pixels*2)
 }
 
 function reset () {
     killIntervals()
-
-    setTimeout(function () {
-        fc.send(new Uint8Array(8*3));
-    }, 1000)
-
-    setTimeout(function () {
-        baseAnimationReversed(0, 8)
-    }, 2000)
-
-    setTimeout(function() {
-        killIntervals()
-        chargeUp(0, 8)
-    }, 6000)
 }
 
 function baseAnimationReversed (frame, pixels) {
@@ -223,12 +208,12 @@ function baseAnimationReversed (frame, pixels) {
         fc.send(data)
         frame++
         
-    }, 1000/21)
+    }, 1000/8)
 }
 
 function allColorLights(frame, pixels) {
     ACL_INTERVAL = setInterval(function () {
-        if (frame % 4 === 0) {
+        if (frame % pixels === 0) {
             let data = new Uint8Array(pixels * 3)
             let min = 1
             let max = 255
@@ -240,28 +225,49 @@ function allColorLights(frame, pixels) {
                 data[i + 2] = getRandomInt(min, max)
             }
             fc.send(data)
-            console.log(data)
+            console.log(`\n ${data.toString()}`)
         }
-
         frame++
-
-
-
-    }, 1000/8*4)
+    }, 1000/8*3)
 }
 
+function fadeAllLights(frame, pixels) {
+    ACL2_INTERVAL = setInterval(function () {
+        if (frame % pixels === 0) {
+            let data = new Uint8Array(pixels * 3)
+            let min = 1
+            let max = 255
+
+            let color1 = getRandomInt(min, max)
+            let color2 = getRandomInt(min, max)
+            let color3 = getRandomInt(min, max)
+
+            for (let pixel = 0; pixel < pixels; pixel++) {
+                let i = 3 * pixel
+                data[i] = color1
+                data[i + 1] = color2
+                data[i + 2] = color3
+            }
+            fc.send(data)
+            console.log(`\n ${data.toString()}`)
+        }
+        frame++
+    }, 1000)
+}
 
 
 function killIntervals() {
     let intervals = [
         BA_INTERVAL,
         ACL_INTERVAL,
+        ACL2_INTERVAL,
         BAR_INTERVAL,
         INTERVAL_1,
         INTERVAL_2,
         INTERVAL_3,
         INTERVAL_4,
-        PINGPONG_INTERVAL
+        PINGPONG_INTERVAL,
+        PINGPONG_INTERVAL2
     ]
 
     intervals.forEach(function (interval) {

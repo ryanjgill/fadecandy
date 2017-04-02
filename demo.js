@@ -3,17 +3,10 @@
 const FadeCandy = require('./dist/FadeCandy')
 const chalk = require('chalk')
 
-let BA_INTERVAL = null
 let ACL_INTERVAL = null
 let ACL2_INTERVAL = null
-let BAR_INTERVAL = null
 let INTERVAL_1 = null
 let INTERVAL_2 = null
-let INTERVAL_3 = null
-let INTERVAL_4 = null
-let MAIN_INTERVAL = null
-let PINGPONG_INTERVAL = null
-let PINGPONG_INTERVAL2 = null
 
 let fc = new FadeCandy()
 
@@ -53,18 +46,13 @@ fc.on(FadeCandy.events.COLOR_LUT_READY, function () {
 
     let frame = 0
     let pixels = 8
-    let duration = 3000
-    let limit = 4;
 
-    reset()
+    reset(pixels)
 
-    chargeUp(0, pixels)
-    //allColorLights(0,pixels)
-    //fadeAllLights(0, pixels)
-    //pingPong(0, pixels)
-    //randomColorsThenChase()
-
-    //baseAnimationReversed(0, pixels)
+    //chargeUp(0, pixels, '', 1000/4)
+    //allColorLights(0,pixels, 1000/4)
+    fadeAllLights(0, pixels, getRandomColor(), 1000)
+    //chaseDown(0, pixels, [255,0,0], 30)
 })
 
 function turnOff() {
@@ -81,115 +69,72 @@ function turnOff() {
     fc.send([].concat.apply([], allOff))
 }
 
-function pingPong(frame, pixels) {
-    let duration = 4000
-
-    PINGPONG_INTERVAL = setInterval(function () {
-        killIntervals()
-
-        chargeUp(0, pixels)
-
-        setTimeout(function () {
-            killIntervals()
-
-            baseAnimationReversed(0, pixels)
-        }, duration/2)
-    }, duration)
-}
-
-function pairs(frame, pixels) {
-    let noColor = [0,0,0]
-
-    let c1 = [0, 244, 25]
-    let c2 = [244, 25, 0]
-
-    let r1 = getRandomColor(0, 255)
-    let r2 = getRandomColor(0, 255)
-
-    let colorPair = r1.concat(noColor)
-
-    let colors = []
-
-    for(let x = 0; x < pixels/2; x++) {
-        colors.push(colorPair)
-    }
-
-    console.log('colors', colors)
-    colors = [].concat.apply([], colors)
-
-    fc.send(colors, function () {
-        console.log(`done updating to ${colors}`)
-    })
-}
-
-function randomColorsThenChase() {
-    let frame = 0
-    let pixels = 8
-
-    let duration = 6000
-
-    setInterval(function () {
-        killIntervals()
-
-        pingPong(frame, pixels)
-
-        setTimeout(function () {
-            killIntervals()
-
-            allColorLights(frame, pixels)
-        }, duration/4 + 100)
-    }, duration)
-
-    allColorLights(frame, pixels)
-
-}
-
-function chargeUp (frame, pixels) {
-    let randomColor = () => {
-        return [
-            getRandomInt(1, 255),
-            getRandomInt(1,255),
-            getRandomInt(1, 255)
-        ]
-    }
-
-    let color = randomColor()
+function chargeUp (frame, pixels, color, duration) {
+    let _color = color || getRandomColor()
+    let _duration = duration || 1000
     let data = new Uint8Array(pixels * 3)
 
-    console.log(`\n${color}`)
+    console.log(`\n${_color}`)
 
     INTERVAL_1 = setInterval(function () {
         for (let pixel = 0; pixel < pixels; pixel ++) {
             if (frame % pixels == pixel) {
                 let i = 3 * pixel
-                data[i] = color[0]
-                data[i + 1] = color[1]
-                data[i + 2] = color[2]
+                data[i] = _color[0]
+                data[i + 1] = _color[1]
+                data[i + 2] = _color[2]
             }
         }
         fc.send(data)
         frame++
 
-        if (frame % pixels === 0) {
-            reset()
-            chargeUp(frame, pixels)
+        if (frame % (pixels+1) === 0) {
+            reset(pixels)
+            chargeUp(0, pixels, color, duration)
         }
 
-    }, 1000/pixels*2)
+    }, _duration)
 }
 
-function reset () {
+function reset (pixels) {
     killIntervals()
+    fc.send(new Uint8Array(pixels * 3))
 }
 
-function baseAnimationReversed (frame, pixels) {
-    let randomColor = [
-        getRandomInt(1, 255),
-        getRandomInt(1, 255),
-        getRandomInt(1, 255)
-    ]
+function chaseUp (frame, pixels, color, duration) {
+    let _color = color || getRandomColor()
+    let _duration = duration || 1000/8/2
 
-    let color = randomColor
+    killIntervals();
+
+    INTERVAL_1 = setInterval(function () {
+
+        let data = new Uint8Array(pixels * 3)
+
+        for (let pixel = 0; pixel < pixels; pixel ++) {
+            if (frame % pixels == pixel) {
+                let i = 3 * pixel 
+                data[i] = _color[0]
+                data[i + 1] = _color[1]
+                data[i + 2] = _color[2]
+            }
+            console.log(`\n${data}`)
+        }
+        fc.send(data)
+        frame++
+
+        if (frame % pixels === 0) {
+            chaseDown(0, pixels, [255, 0, 0], _duration)
+        }
+        
+    }, _duration)
+}
+
+function chaseDown (frame, pixels, color, duration) {
+    let _color = color || getRandomColor()
+    let _duration = duration || 1000/8/2
+
+    killIntervals();
 
     INTERVAL_2 = setInterval(function () {
 
@@ -198,20 +143,25 @@ function baseAnimationReversed (frame, pixels) {
         for (let pixel = 0; pixel < pixels; pixel ++) {
             if (frame % pixels == pixel) {
                 let n = Math.abs(7-pixel)
-                //let i = 3 * pixel 
                 let i = 3 * n
-                data[i] = color[0]
-                data[i + 1] = color[1]
-                data[i + 2] = color[2]
+                data[i] = _color[0]
+                data[i + 1] = _color[1]
+                data[i + 2] = _color[2]
             }
+            console.log(`\n${data}`)
         }
         fc.send(data)
         frame++
+
+        if (frame % pixels === 0) {
+            chaseUp(0, pixels, [0, 0, 255], _duration)
+        }
         
-    }, 1000/8)
+    }, _duration)
 }
 
-function allColorLights(frame, pixels) {
+function allColorLights(frame, pixels, duration) {
+    let _duration = duration || 1000/8
     ACL_INTERVAL = setInterval(function () {
         if (frame % pixels === 0) {
             let data = new Uint8Array(pixels * 3)
@@ -228,46 +178,39 @@ function allColorLights(frame, pixels) {
             console.log(`\n ${data.toString()}`)
         }
         frame++
-    }, 1000/8*3)
+    }, _duration)
 }
 
-function fadeAllLights(frame, pixels) {
+function fadeAllLights(frame, pixels, color, duration) {
+    let _color = color ? color : getRandomColor()
+    let _duration = duration ? duration : 1000
+
+    killIntervals()
+
     ACL2_INTERVAL = setInterval(function () {
         if (frame % pixels === 0) {
             let data = new Uint8Array(pixels * 3)
-            let min = 1
-            let max = 255
-
-            let color1 = getRandomInt(min, max)
-            let color2 = getRandomInt(min, max)
-            let color3 = getRandomInt(min, max)
 
             for (let pixel = 0; pixel < pixels; pixel++) {
                 let i = 3 * pixel
-                data[i] = color1
-                data[i + 1] = color2
-                data[i + 2] = color3
+                data[i] = _color[0]
+                data[i + 1] = _color[1]
+                data[i + 2] = _color[2]
             }
             fc.send(data)
-            console.log(`\n ${data.toString()}`)
+            fadeAllLights(0, pixels, getRandomColor(), duration)
         }
         frame++
-    }, 1000)
+    }, _duration)
 }
 
 
 function killIntervals() {
     let intervals = [
-        BA_INTERVAL,
         ACL_INTERVAL,
         ACL2_INTERVAL,
-        BAR_INTERVAL,
         INTERVAL_1,
-        INTERVAL_2,
-        INTERVAL_3,
-        INTERVAL_4,
-        PINGPONG_INTERVAL,
-        PINGPONG_INTERVAL2
+        INTERVAL_2
     ]
 
     intervals.forEach(function (interval) {

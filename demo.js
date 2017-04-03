@@ -8,6 +8,8 @@ let ACL2_INTERVAL = null
 let INTERVAL_1 = null
 let INTERVAL_2 = null
 
+let STEP = 1
+
 let fc = new FadeCandy()
 
 function getRandomInt(min, max) {
@@ -50,10 +52,46 @@ fc.on(FadeCandy.events.COLOR_LUT_READY, function () {
     reset(pixels)
 
     //chargeUp(0, pixels, '', 1000/4)
-    //allColorLights(0,pixels, 1000/4)
-    fadeAllLights(0, pixels, getRandomColor(), 1000)
+    //randomColors(0,pixels,1000/8)
+    //fadeAllLights(0, pixels, getRandomColor(), 5000)
     //chaseDown(0, pixels, [255,0,0], 30)
+    demo(1)
+
 })
+
+function demo(step) {
+    switch(step) {
+        case 1: 
+            chargeUp(0, 8, null, 1000/11)
+            break
+        case 2:
+            randomColors(0, 8, 1000/8)
+            break
+        case 3:
+            fadeAllLights(0, 8, getRandomColor(), 1000)
+            break
+        case 4:
+            chaseDown(0, 8, [255,0,0], 30)
+            break    
+    }
+
+    setTimeout(_ => {
+        reset(8)
+        setTimeout(_ => {
+            increaseStep(STEP)
+            demo(STEP)
+        }, 1000)
+    }, 10000)
+}
+
+function increaseStep(step) {
+    if (step === 4) {
+        STEP = 1
+        return
+    }
+
+    STEP++
+}
 
 function turnOff() {
     let pixels = 8
@@ -160,7 +198,7 @@ function chaseDown (frame, pixels, color, duration) {
     }, _duration)
 }
 
-function allColorLights(frame, pixels, duration) {
+function randomColors(frame, pixels, duration) {
     let _duration = duration || 1000/8
     ACL_INTERVAL = setInterval(function () {
         if (frame % pixels === 0) {

@@ -8,6 +8,9 @@ let ACL2_INTERVAL = null
 let INTERVAL_1 = null
 let INTERVAL_2 = null
 
+const TOTAL_PIXELS = 60;
+const DURATION = 1000/TOTAL_PIXELS
+
 let STEP = 1
 
 let fc = new FadeCandy()
@@ -47,41 +50,41 @@ fc.on(FadeCandy.events.COLOR_LUT_READY, function () {
     console.log('FaceCandy says color lut ready')
 
     let frame = 0
-    let pixels = 8
+    let duration = 1000/TOTAL_PIXELS
 
-    reset(pixels)
+    reset(TOTAL_PIXELS)
 
-    //chargeUp(0, pixels, '', 1000/4)
-    //randomColors(0,pixels,1000/8)
-    //fadeAllLights(0, pixels, getRandomColor(), 5000)
-    //chaseDown(0, pixels, [255,0,0], 30)
-    demo(1)
+    //chargeUp(0, TOTAL_PIXELS, '', duration*3/3)
+    //randomColors(0,TOTAL_PIXELS,duration/2)
+    //fadeAllLights(0, TOTAL_PIXELS, getRandomColor(), 2000)
+    //chaseDown(0, TOTAL_PIXELS, [255,0,0], duration/4)
+    //demo(1)
 
 })
 
 function demo(step) {
     switch(step) {
         case 1: 
-            chargeUp(0, 8, null, 1000/11)
+            chargeUp(0, TOTAL_PIXELS, null, DURATION*3)
             break
         case 2:
-            randomColors(0, 8, 1000/8)
+            randomColors(0, TOTAL_PIXELS, DURATION/2)
             break
         case 3:
-            fadeAllLights(0, 8, getRandomColor(), 1000)
+            fadeAllLights(0, TOTAL_PIXELS, getRandomColor(), 2000)
             break
         case 4:
-            chaseDown(0, 8, [255,0,0], 30)
+            chaseDown(0, TOTAL_PIXELS, [255,0,0], DURATION/4)
             break    
     }
 
     setTimeout(_ => {
-        reset(8)
+        reset(TOTAL_PIXELS)
         setTimeout(_ => {
             increaseStep(STEP)
             demo(STEP)
-        }, 1000)
-    }, 10000)
+        }, 100)
+    }, 14000)
 }
 
 function increaseStep(step) {
@@ -94,11 +97,10 @@ function increaseStep(step) {
 }
 
 function turnOff() {
-    let pixels = 8
     let noColor = [0,0,0]
     let allOff = []
 
-    for(let x=0; x<pixels; x++) {
+    for(let x=0; x<TOTAL_PIXELS; x++) {
         allOff.push(noColor)
     }
 
@@ -170,7 +172,7 @@ function chaseUp (frame, pixels, color, duration) {
 
 function chaseDown (frame, pixels, color, duration) {
     let _color = color || getRandomColor()
-    let _duration = duration || 1000/8/2
+    let _duration = duration || 1000/TOTAL_PIXELS/2
 
     killIntervals();
 
@@ -180,7 +182,7 @@ function chaseDown (frame, pixels, color, duration) {
 
         for (let pixel = 0; pixel < pixels; pixel ++) {
             if (frame % pixels == pixel) {
-                let n = Math.abs(7-pixel)
+                let n = Math.abs(pixels -1 -pixel)
                 let i = 3 * n
                 data[i] = _color[0]
                 data[i + 1] = _color[1]
@@ -199,6 +201,7 @@ function chaseDown (frame, pixels, color, duration) {
 }
 
 function randomColors(frame, pixels, duration) {
+    reset(pixels)
     let _duration = duration || 1000/8
     ACL_INTERVAL = setInterval(function () {
         if (frame % pixels === 0) {

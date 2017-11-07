@@ -11,6 +11,10 @@ const cors = require('cors')
 
 let fadeCandyReady = false
 let __intervals = []
+let TOTAL_PIXELS = 8
+let CURRENT_PIXEL_COUNT = TOTAL_PIXELS
+let CURRENT_COLOR = [63,81,181]
+let FRAME = 0
 
 server.listen(3000)
 
@@ -19,31 +23,52 @@ app.use(cors())
 app.set('view engine', 'pug')
 app.use(express.static('public'))
 app.get('/', (req, res) => {
-  res.render('index')
+  res.render('index', { 
+    startingColor: CURRENT_COLOR, 
+    totalPixels: TOTAL_PIXELS
+  })
 })
 
 io.on('connection', socket => {
   console.log(socket.id)
+
+  socket.emit('newColor', CURRENT_COLOR)
+  socket.emit('pixelCount', CURRENT_PIXEL_COUNT)
+
   socket.on('newColor', data => {
     if (fadeCandyReady) {
       killIntervals()
-      allSameColor(0, 8, data.color)
+      allSameColor(0, CURRENT_PIXEL_COUNT, data.color)
     }
+
+    CURRENT_COLOR = data.color
     socket.broadcast.emit('newColor', data.color)
   })
 
   socket.on('chargeUp', data => {
     if (fadeCandyReady) {
       killIntervals()
-      chargeUp(0, 8, data.color)
+      chargeUp(0, CURRENT_PIXEL_COUNT, data.color)
     }
   })
 
   socket.on('turnOff', data => {
     if (fadeCandyReady) {
       killIntervals()
-      clearStrip(8);
+      clearStrip(CURRENT_PIXEL_COUNT);
       socket.broadcast.emit('turnOff')
+    }
+  })
+
+  socket.on('pixelCount', data => {
+    CURRENT_PIXEL_COUNT = data.pixelCount
+    socket.broadcast.emit('pixelCount', CURRENT_PIXEL_COUNT)
+
+    if (fadeCandyReady) {
+      killIntervals()
+      
+      clearStrip(CURRENT_PIXEL_COUNT)
+      allSameColor(0, CURRENT_PIXEL_COUNT, data.color)      
     }
   })
 })
@@ -88,10 +113,9 @@ fc.on(FadeCandy.events.COLOR_LUT_READY, () => {
   console.log('FaceCandy says color lut ready')
   fadeCandyReady = true
 
-  let frame = 0
-  let pixels = 8
+  let frame = FRAME
 
-  chargeUp(frame, pixels)
+  chargeUp(frame, CURRENT_PIXEL_COUNT, CURRENT_COLOR)
 })
 
 function chargeUp(frame, pixels, _color) {
@@ -105,6 +129,9 @@ function chargeUp(frame, pixels, _color) {
 
   let color = _color ? _color : randomColor()
   let data = new Uint8Array(pixels * 3)
+
+  CURRENT_COLOR = color
+  io.sockets.emit('newColor', CURRENT_COLOR)
 
   let intervalId = setInterval(() => {
     // delay filling of bar
@@ -148,8 +175,11 @@ function allSameColor(frame, pixels, _color) {
     ]
   }
 
-  let color = _color ? _color : randomColor()
+  let color = _color ? _color : randomColor()  
   let data = []
+
+  CURRENT_COLOR =color
+  io.sockets.emit('newColor', color)
 
   for (let pixel = 0; pixel < pixels; pixel++) {
     data.push(color[0])
@@ -177,7 +207,7 @@ function allRandomColor(_frame, pixels, _color) {
 
   let color = _color ? _color : randomColor()
   let data = []
-  let frame = _frame ? _frame : 0
+  let frame = _frame ? _frame : FRAME
 
   for (let pixel = 0; pixel < pixels; pixel++) {
     data.push(color[0])
@@ -187,7 +217,6 @@ function allRandomColor(_frame, pixels, _color) {
 
   let intervalId = setInterval(() => {
     if (frame > 20) {
-      console.log('pick New Color!')
       resetARC(0, pixels)
       return
     }
@@ -207,22 +236,24 @@ function resetARC(frame, pixels) {
 
 function clearStrip(pixels) {
   fc.send(new Uint8Array(pixels * 3));
+  CURRENT_COLOR = [0, 0, 0]
+  io.sockets.emit('newColor', CURRENT_COLOR)
 }
 
 function reset() {
   killIntervals()
 
   let intervalId = setTimeout(() => {
-    clearStrip(8);
+    clearStrip(CURRENT_PIXEL_COUNT);
   }, 1000)
 
   let intervalId2 = setTimeout(() => {
-    baseAnimationReversed(0, 8)
+    baseAnimationReversed(0, CURRENT_PIXEL_COUNT)
   }, 2000)
 
   let intervalId3 = setTimeout(() => {
     killIntervals()
-    chargeUp(0, 8)
+    chargeUp(0, CURRENT_PIXEL_COUNT)
   }, 6000)
 
   __intervals.push(intervalId)
@@ -238,6 +269,8 @@ function baseAnimationReversed(frame, pixels) {
   ]
 
   let color = randomColor
+  CURRENT_COLOR = color
+  io.sockets.emit('newColor', CURRENT_COLOR)
 
   let intervalId = setInterval(() => {
 
@@ -245,7 +278,7 @@ function baseAnimationReversed(frame, pixels) {
 
     for (let pixel = 0; pixel < pixels; pixel++) {
       if (frame % pixels == pixel) {
-        let n = Math.abs(7 - pixel)
+        let n = Math.abs(CURRENT_PIXEL_COUNT -1  - pixel)
         //let i = 3 * pixel
         let i = 3 * n
         data[i] = color[0]

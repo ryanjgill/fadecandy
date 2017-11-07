@@ -29,7 +29,15 @@ html
                     div.actions
                         button(id='chargeUp', class='mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--primary') Charge Up
                         button(id='turnOff', class='mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--primary') Turn Off
-
+                    h3 
+                        span Pixels
+                        span.totalPixels.mdl-color--primary #{totalPixels}
+                    hr
+                    input(type="range" id="pixelCount" class="mdl-slider mdl-js-slider" min="1" max=totalPixels value=totalPixels)
+        
+        script.
+            window.__pixelCount = !{JSON.stringify(totalPixels)}
+            window.__startingColor = !{JSON.stringify(startingColor)}
 
         script(src="/js/socket.io.min.js")
         script(src="/js/jquery.min.js")

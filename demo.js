@@ -53,13 +53,6 @@ fc.on(FadeCandy.events.COLOR_LUT_READY, function () {
     let duration = 1000/TOTAL_PIXELS
 
     reset(TOTAL_PIXELS)
-
-    //chargeUp(0, TOTAL_PIXELS, '', duration*3/3)
-    //randomColors(0,TOTAL_PIXELS,duration/2)
-    //fadeAllLights(0, TOTAL_PIXELS, getRandomColor(), 2000)
-    //chaseDown(0, TOTAL_PIXELS, [255,0,0], duration/4)
-    //demo(1)
-
 })
 
 function demo(step) {

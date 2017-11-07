@@ -10,6 +10,7 @@ const io = require('socket.io')(server)
 const cors = require('cors')
 
 let fadeCandyReady = false
+let __intervals = []
 
 server.listen(3000)
 
@@ -28,12 +29,21 @@ io.on('connection', socket => {
       killIntervals()
       allSameColor(0, 8, data.color)
     }
+    socket.broadcast.emit('newColor', data.color)
   })
 
   socket.on('chargeUp', data => {
     if (fadeCandyReady) {
       killIntervals()
       chargeUp(0, 8, data.color)
+    }
+  })
+
+  socket.on('turnOff', data => {
+    if (fadeCandyReady) {
+      killIntervals()
+      clearStrip(8);
+      socket.broadcast.emit('turnOff')
     }
   })
 })
@@ -61,7 +71,7 @@ function getRandomColor() {
 fc.on(FadeCandy.events.READY, () => {
   console.log('FadeCandy.events.READY')
   // see the config schema
-  console.log(fc.Configuration.schema)
+  //console.log(fc.Configuration.schema)
   // create default color look up table
   fc.clut.create()
   // set fadecandy led to manual mode
@@ -96,7 +106,7 @@ function chargeUp(frame, pixels, _color) {
   let color = _color ? _color : randomColor()
   let data = new Uint8Array(pixels * 3)
 
-  INTERVAL_1 = setInterval(() => {
+  let intervalId = setInterval(() => {
     // delay filling of bar
     let randomInt = Math.random()
 
@@ -125,6 +135,8 @@ function chargeUp(frame, pixels, _color) {
     }
 
   }, 1000 / 21 * 3)
+
+  __intervals.push(intervalId)
 }
 
 function allSameColor(frame, pixels, _color) {
@@ -145,11 +157,13 @@ function allSameColor(frame, pixels, _color) {
     data.push(color[2])
   }
 
-  ASC = setInterval(() => {
+  let intervalId = setInterval(() => {
     fc.send(data)
     frame++
 
   }, 1000 / 60)
+
+  __intervals.push(intervalId)
 }
 
 function allRandomColor(_frame, pixels, _color) {
@@ -171,7 +185,7 @@ function allRandomColor(_frame, pixels, _color) {
     data.push(color[2])
   }
 
-  ARC = setInterval(() => {
+  let intervalId = setInterval(() => {
     if (frame > 20) {
       console.log('pick New Color!')
       resetARC(0, pixels)
@@ -182,6 +196,8 @@ function allRandomColor(_frame, pixels, _color) {
     frame++
 
   }, 1000 / 60)
+
+  __intervals.push(intervalId)
 }
 
 function resetARC(frame, pixels) {
@@ -196,18 +212,22 @@ function clearStrip(pixels) {
 function reset() {
   killIntervals()
 
-  RESET_1 = setTimeout(() => {
+  let intervalId = setTimeout(() => {
     clearStrip(8);
   }, 1000)
 
-  RESET_2 = setTimeout(() => {
+  let intervalId2 = setTimeout(() => {
     baseAnimationReversed(0, 8)
   }, 2000)
 
-  RESET_3 = setTimeout(() => {
+  let intervalId3 = setTimeout(() => {
     killIntervals()
     chargeUp(0, 8)
   }, 6000)
+
+  __intervals.push(intervalId)
+  __intervals.push(intervalId2)
+  __intervals.push(intervalId3)
 }
 
 function baseAnimationReversed(frame, pixels) {
@@ -219,7 +239,7 @@ function baseAnimationReversed(frame, pixels) {
 
   let color = randomColor
 
-  INTERVAL_2 = setInterval(() => {
+  let intervalId = setInterval(() => {
 
     let data = new Uint8Array(pixels * 3)
 
@@ -239,27 +259,20 @@ function baseAnimationReversed(frame, pixels) {
     let trips = pixels * 4
 
     if (frame % trips === 0) {
-      clearInterval(INTERVAL_2)
+      killIntervals()
       clearStrip(pixels)
     }
 
   }, 1000 / 21)
+
+  __intervals.push(intervalId)
 }
 
 function killIntervals() {
-  let intervals = [
-    INTERVAL_1,
-    INTERVAL_2,
-    ASC,
-    ARC,
-    RESET_1,
-    RESET_2,
-    RESET_3
-  ]
-
-  intervals.forEach(function (interval) {
-    clearInterval(interval)
-  })
+  __intervals.reduce((out, intervalId) => {
+    clearInterval(intervalId)
+    return out
+  }, [])
 }
 
 console.log('up and running on 3000')

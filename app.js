@@ -11,7 +11,10 @@ const cors = require('cors')
 
 let fadeCandyReady = false
 let __intervals = []
-let TOTAL_PIXELS = 8
+
+// SET TOTAL PIXELS HERE
+let TOTAL_PIXELS = 64
+
 let CURRENT_PIXEL_COUNT = TOTAL_PIXELS
 let CURRENT_COLOR = [63,81,181]
 let FRAME = 0
@@ -127,7 +130,7 @@ function chargeUp(frame, pixels, _color) {
     ]
   }
 
-  let color = _color ? _color : randomColor()
+  let color = _color && _color.toString() != '0,0,0' ? _color : randomColor()
   let data = new Uint8Array(pixels * 3)
 
   CURRENT_COLOR = color

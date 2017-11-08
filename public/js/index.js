@@ -7,6 +7,7 @@ function rgbToHex(r, g, b) {
 }
 
 socket.on('newColor', function (color) {
+  __selectedColor = color
   $('.colorPicker').val(rgbToHex(color[0] || 0, color[1] || 0, color[2] || 0))
 });
 

@@ -11,13 +11,16 @@ const cors = require('cors')
 
 let fadeCandyReady = false
 let __intervals = []
+let __timers = []
 
 // SET TOTAL PIXELS HERE
-let TOTAL_PIXELS = 64
+let TOTAL_PIXELS = 60
 
 let CURRENT_PIXEL_COUNT = TOTAL_PIXELS
 let CURRENT_COLOR = [63,81,181]
 let FRAME = 0
+
+let PIXEL_ARRAY = []
 
 server.listen(3000)
 
@@ -41,7 +44,8 @@ io.on('connection', socket => {
   socket.on('newColor', data => {
     if (fadeCandyReady) {
       killIntervals()
-      allSameColor(0, CURRENT_PIXEL_COUNT, data.color)
+      killTimers()
+      allSameColor(FRAME, CURRENT_PIXEL_COUNT, data.color)
     }
 
     CURRENT_COLOR = data.color
@@ -51,14 +55,24 @@ io.on('connection', socket => {
   socket.on('chargeUp', data => {
     if (fadeCandyReady) {
       killIntervals()
+      killTimers()
       chargeUp(0, CURRENT_PIXEL_COUNT, data.color)
+    }
+  })
+
+  socket.on('disco', data => {
+    if (fadeCandyReady) {
+      killIntervals()
+      killTimers()
+      randomColors(FRAME, CURRENT_PIXEL_COUNT, 1000/CURRENT_PIXEL_COUNT)
     }
   })
 
   socket.on('turnOff', data => {
     if (fadeCandyReady) {
       killIntervals()
-      clearStrip(CURRENT_PIXEL_COUNT);
+      killTimers()
+      clearStrip(TOTAL_PIXELS);
       socket.broadcast.emit('turnOff')
     }
   })
@@ -69,20 +83,13 @@ io.on('connection', socket => {
 
     if (fadeCandyReady) {
       killIntervals()
+      killTimers()
       
-      clearStrip(CURRENT_PIXEL_COUNT)
-      allSameColor(0, CURRENT_PIXEL_COUNT, data.color)      
+      //clearStrip(TOTAL_PIXELS)
+      allSameColor(FRAME, CURRENT_PIXEL_COUNT, data.color)      
     }
   })
 })
-
-let INTERVAL_1
-let INTERVAL_2
-let ASC
-let ARC
-let RESET_1
-let RESET_2
-let RESET_3
 
 let fc = new FadeCandy()
 
@@ -140,9 +147,10 @@ function chargeUp(frame, pixels, _color) {
     // delay filling of bar
     let randomInt = Math.random()
 
-    if (randomInt < 0.24) {
+    if (randomInt < 0.30) {
       //data = data ? data.slice(0, data.length-3) : []
       fc.send(data)
+      PIXEL_ARRAY = data
       console.log(chalk.red(randomInt))
       return
     }
@@ -158,6 +166,7 @@ function chargeUp(frame, pixels, _color) {
       }
     }
     fc.send(data)
+    PIXEL_ARRAY = data
     frame++
 
     if (frame % pixels === 0) {
@@ -190,8 +199,15 @@ function allSameColor(frame, pixels, _color) {
     data.push(color[2])
   }
 
+  for (let pixel = 0; pixel < TOTAL_PIXELS-pixels; pixel++ ) {
+    data.push(0)
+    data.push(0)
+    data.push(0)
+  }
+
   let intervalId = setInterval(() => {
     fc.send(data)
+    PIXEL_ARRAY = data
     frame++
 
   }, 1000 / 60)
@@ -225,6 +241,7 @@ function allRandomColor(_frame, pixels, _color) {
     }
 
     fc.send(data)
+    PIXEL_ARRAY = data
     frame++
 
   }, 1000 / 60)
@@ -246,22 +263,22 @@ function clearStrip(pixels) {
 function reset() {
   killIntervals()
 
-  let intervalId = setTimeout(() => {
-    clearStrip(CURRENT_PIXEL_COUNT);
+  let timerId = setTimeout(() => {
+    clearStrip(TOTAL_PIXELS);
   }, 1000)
 
-  let intervalId2 = setTimeout(() => {
+  let timerId2 = setTimeout(() => {
     baseAnimationReversed(0, CURRENT_PIXEL_COUNT)
   }, 2000)
 
-  let intervalId3 = setTimeout(() => {
+  let timerId3 = setTimeout(() => {
     killIntervals()
     chargeUp(0, CURRENT_PIXEL_COUNT)
   }, 6000)
 
-  __intervals.push(intervalId)
-  __intervals.push(intervalId2)
-  __intervals.push(intervalId3)
+  __timers.push(timerId)
+  __timers.push(timerId2)
+  __timers.push(timerId3)
 }
 
 function baseAnimationReversed(frame, pixels) {
@@ -290,6 +307,7 @@ function baseAnimationReversed(frame, pixels) {
       }
     }
     fc.send(data)
+    PIXEL_ARRAY = data
     frame++
 
     let trips = pixels * 4
@@ -302,6 +320,37 @@ function baseAnimationReversed(frame, pixels) {
   }, 1000 / 21)
 
   __intervals.push(intervalId)
+}
+
+function randomColors(frame, pixels, duration) {
+  //reset(pixels)
+  let _duration = duration || 1000/8
+  let intervalId = setInterval(function () {
+      if (frame % pixels === 0) {
+          let data = new Uint8Array(pixels * 3)
+          let min = 1
+          let max = 255
+
+          for (let pixel = 0; pixel < pixels; pixel++) {
+              let i = 3 * pixel
+              data[i] = getRandomInt(min, max)
+              data[i + 1] = getRandomInt(min, max)
+              data[i + 2] = getRandomInt(min, max)
+          }
+          fc.send(data)
+          PIXEL_ARRAY = data
+      }
+      frame++
+  }, _duration)
+
+  __intervals.push(intervalId)
+}
+
+function killTimers() {
+  __timers.reduce((out, timerId) => {
+    clearTimeout(timerId)
+    return out
+  }, [])
 }
 
 function killIntervals() {

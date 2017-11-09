@@ -68,6 +68,10 @@ $(function () {
     socket.emit('chargeUp', {color: __selectedColor})
   })
 
+  $('#disco').on('click', function () {
+    socket.emit('disco')
+  })
+
   $('#turnOff').on('click', function () {
     socket.emit('turnOff')
   })

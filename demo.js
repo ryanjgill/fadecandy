@@ -53,6 +53,7 @@ fc.on(FadeCandy.events.COLOR_LUT_READY, function () {
     let duration = 1000/TOTAL_PIXELS
 
     reset(TOTAL_PIXELS)
+    demo(1)
 })
 
 function demo(step) {
@@ -68,6 +69,9 @@ function demo(step) {
             break
         case 4:
             chaseDown(0, TOTAL_PIXELS, [255,0,0], DURATION/4)
+            break
+        default: 
+            chargeUp(0, TOTAL_PIXELS, null, DURATION*3)
             break    
     }
 
@@ -107,7 +111,7 @@ function chargeUp (frame, pixels, color, duration) {
     let _duration = duration || 1000
     let data = new Uint8Array(pixels * 3)
 
-    console.log(`\n${_color}`)
+    //console.log(`\n${_color}`)
 
     INTERVAL_1 = setInterval(function () {
         for (let pixel = 0; pixel < pixels; pixel ++) {
@@ -151,7 +155,7 @@ function chaseUp (frame, pixels, color, duration) {
                 data[i + 1] = _color[1]
                 data[i + 2] = _color[2]
             }
-            console.log(`\n${data}`)
+            //console.log(`\n${data}`)
         }
         fc.send(data)
         frame++
@@ -181,7 +185,7 @@ function chaseDown (frame, pixels, color, duration) {
                 data[i + 1] = _color[1]
                 data[i + 2] = _color[2]
             }
-            console.log(`\n${data}`)
+            //console.log(`\n${data}`)
         }
         fc.send(data)
         frame++
@@ -209,7 +213,6 @@ function randomColors(frame, pixels, duration) {
                 data[i + 2] = getRandomInt(min, max)
             }
             fc.send(data)
-            console.log(`\n ${data.toString()}`)
         }
         frame++
     }, _duration)
